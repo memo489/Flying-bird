@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Bird - Gelişmiş Grafikler</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: manipulation;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(to bottom, #1a2980, #26d0ce);
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        #gameCanvas {
+            border: 3px solid #2c3e50;
+            border-radius: 10px;
+            background-color: #70c5ce;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .controls {
+            margin-top: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        button {
+            padding: 12px 25px;
+            font-size: 16px;
+            background: linear-gradient(to bottom, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            max-width: 200px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            font-weight: bold;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .score-container {
+            margin-top: 10px;
+            font-size: 22px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.3);
+            padding: 5px 15px;
+            border-radius: 20px;
+        }
+
+        .instructions {
+            margin-top: 15px;
+            color: white;
+            font-size: 14px;
+            text-align: center;
+            max-width: 300px;
+            line-height: 1.4;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.9), rgba(40, 40, 40, 0.9));
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+            z-index: 10;
+            width: 80%;
+            max-width: 300px;
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .game-over h2 {
+            margin-bottom: 15px;
+            color: #ff5252;
+            text-shadow: 0 0 10px rgba(255, 82, 82, 0.5);
+            font-size: 28px;
+        }
+
+        .tap-hint {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            color: white;
+            font-size: 18px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+            animation: pulse 1.5s infinite;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 8px;
+            border-radius: 10px;
+            margin: 0 20px;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.6; transform: scale(0.98); }
+            50% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0.6; transform: scale(0.98); }
+        }
+
+        @keyframes scorePop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.4); color: #FFD700; }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes screenShake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            50% { transform: translateX(8px); }
+            75% { transform: translateX(-8px); }
+            100% { transform: translateX(0); }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 10px;
+            }
+            
+            button {
+                padding: 15px;
+                font-size: 18px;
+            }
+            
+            .score-container {
+                font-size: 24px;
+            }
+            
+            .game-over h2 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <canvas id="gameCanvas" width="320" height="480"></canvas>
+        
+        <div class="score-container">
+            Skor: <span id="score">0</span>
+        </div>
+        
+        <div class="tap-hint" id="tapHint">
+            🎮 Ekrana dokun veya boşluk tuşuna bas! 🎮
+        </div>
+        
+        <div class="game-over" id="gameOver">
+            <h2>Oyun Bitti!</h2>
+            <p>Skorunuz: <span id="finalScore">0</span></p>
+            <button id="restartButton">Yeniden Başlat</button>
+        </div>
+        
+        <div class="controls">
+            <button id="startButton">🎮 Oyuna Başla 🎮</button>
+        </div>
+        
+        <div class="instructions">
+            Kuşu boruların arasından geçirmeye çalışın. Ekrana dokunarak veya boşluk tuşuna basarak zıplayın.
+        </div>
+    </div>
+
+    <script>
+        // Canvas ve context
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Oyun değişkenleri
+        let gameStarted = false;
+        let gameOver = false;
+        let score = 0;
+        let frames = 0;
+        let firstTap = false;
+        let screenShake = 0;
+        let particles = [];
+        
+        // Canvas boyutunu ayarla
+        function resizeCanvas() {
+            const container = document.querySelector('.container');
+            const maxWidth = Math.min(container.clientWidth, 400);
+            canvas.width = maxWidth;
+            canvas.height = maxWidth * 1.5;
+        }
+        
+        // Kuş nesnesini tanımla
+        const bird = {
+            x: 80,
+            y: canvas.height / 2,
+            width: 40,
+            height: 30,
+            gravity: 0.25,
+            velocity: 0,
+            jump: -7,
+            rotation: 0,
+            maxVelocity: 10,
+            wingPhase: 0,
+            
+            draw: function() {
+                ctx.save();
+                
+                // Ekran titreme efekti
+                if (screenShake > 0) {
+                    ctx.translate(Math.random() * screenShake - screenShake/2, Math.random() * screenShake - screenShake/2);
+                }
+                
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+                
+                // Kuş gölgesi
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                ctx.beginPath();
+                ctx.ellipse(4, 4, this.width/2, this.height/2, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Vücut gradient
+                let bodyGradient = ctx.createRadialGradient(0, 0, 5, 0, 0, this.width/2);
+                bodyGradient.addColorStop(0, '#FF8A65');
+                bodyGradient.addColorStop(1, '#FF5722');
+                
+                // Vücut
+                ctx.fillStyle = bodyGradient;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, this.width/2, this.height/2, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Vücut detay - texture
+                ctx.strokeStyle = 'rgba(230, 74, 25, 0.7)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(0, 0, this.width/2 - 2, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                // Baş gradient
+                let headGradient = ctx.createRadialGradient(15, -5, 5, 15, -5, 12);
+                headGradient.addColorStop(0, '#FF8A65');
+                headGradient.addColorStop(1, '#FF5722');
+                ctx.fillStyle = headGradient;
+                ctx.beginPath();
+                ctx.arc(15, -5, 12, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Göz beyazı
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(20, -8, 6, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Göz bebeği
+                ctx.fillStyle = 'black';
+                ctx.beginPath();
+                ctx.arc(21, -8, 3, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Göz parlaması
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(19.5, -9, 1.5, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Gaga gradient
+                let beakGradient = ctx.createLinearGradient(25, -5, 35, 0);
+                beakGradient.addColorStop(0, '#FFB74D');
+                beakGradient.addColorStop(1, '#FF9800');
+                ctx.fillStyle = beakGradient;
+                ctx.beginPath();
+                ctx.moveTo(25, -5);
+                ctx.lineTo(35, -3);
+                ctx.lineTo(35, 0);
+                ctx.lineTo(25, -2);
+                ctx.closePath();
+                ctx.fill();
+                
+                // Gaga detay
+                ctx.strokeStyle = 'rgba(255, 152, 0, 0.5)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(28, -4);
+                ctx.lineTo(32, -2.5);
+                ctx.stroke();
+                
+                // Kanat - animasyonlu
+                this.wingPhase += 0.3;
+                let wingY = Math.sin(this.wingPhase) * 5;
+                let wingGradient = ctx.createLinearGradient(-8, wingY, -8, wingY + 8);
+                wingGradient.addColorStop(0, '#F4511E');
+                wingGradient.addColorStop(1, '#D84315');
+                ctx.fillStyle = wingGradient;
+                ctx.beginPath();
+                ctx.ellipse(-8, wingY, 12, 8, Math.PI/4, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Kanat detayları
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(-14, wingY);
+                ctx.lineTo(-2, wingY + 4);
+                ctx.stroke();
+                
+                // Kuyruk gradient
+                let tailGradient = ctx.createLinearGradient(-18, 0, -30, 0);
+                tailGradient.addColorStop(0, '#F4511E');
+                tailGradient.addColorStop(1, '#D84315');
+                ctx.fillStyle = tailGradient;
+                ctx.beginPath();
+                ctx.moveTo(-18, 0);
+                ctx.lineTo(-30, -5);
+                ctx.lineTo(-30, 5);
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.restore();
+            },
+            
+            update: function() {
+                // Sadece ilk dokunuştan sonra fizik uygula
+                if (gameStarted && !gameOver && firstTap) {
+                    this.velocity += this.gravity;
+                    
+                    // Maksimum düşüş hızını sınırla
+                    if (this.velocity > this.maxVelocity) {
+                        this.velocity = this.maxVelocity;
+                    }
+                    
+                    this.y += this.velocity;
+                    
+                    // Kuşun açısını hızına göre ayarla
+                    this.rotation = this.velocity * 0.05;
+                    if (this.rotation > Math.PI/4) this.rotation = Math.PI/4;
+                    if (this.rotation < -Math.PI/4) this.rotation = -Math.PI/4;
+                    
+                    // Yere çarpma kontrolü
+                    if (this.y + this.height/2 >= canvas.height - 80) {
+                        this.y = canvas.height - 80 - this.height/2;
+                        createParticles(this.x, this.y + this.height/2, 20, '#FF5722');
+                        screenShake = 10;
+                        endGame();
+                    }
+                    
+                    // Tavana çarpma kontrolü
+                    if (this.y - this.height/2 <= 0) {
+                        this.y = this.height/2;
+                        this.velocity = 0;
+                    }
+                }
+            },
+            
+            flap: function() {
+                if (gameStarted && !gameOver) {
+                    // İlk dokunuşu işaretle
+                    if (!firstTap) {
+                        firstTap = true;
+                        document.getElementById('tapHint').style.display = 'none';
+                    }
+                    
+                    this.velocity = this.jump;
+                    
+                    // Zıplama partikülleri
+                    createParticles(this.x, this.y + this.height/2, 10, '#FFD700');
+                }
+            },
+            
+            reset: function() {
+                this.y = canvas.height / 2;
+                this.velocity = 0;
+                this.rotation = 0;
+                this.wingPhase = 0;
+                firstTap = false;
+            }
+        };
+        
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        // Partikül sınıfı
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.size = Math.random() * 4 + 1;
+                this.speedX = Math.random() * 6 - 3;
+                this.speedY = Math.random() * 6 - 3;
+                this.color = color;
+                this.life = 30;
+                this.alpha = 1;
+            }
+            
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                this.life--;
+                this.alpha = this.life / 30;
+                this.size *= 0.95;
+            }
+            
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                
+                // Partikül gölgesi
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                ctx.beginPath();
+                ctx.arc(this.x + 1, this.y + 1, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Partikül
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.restore();
+            }
+        }
+        
+        // Partikül oluşturma fonksiyonu
+        function createParticles(x, y, count, color) {
+            for (let i = 0; i < count; i++) {
+                particles.push(new Particle(x, y, color));
+            }
+        }
+        
+        // Borular dizisi
+        const pipes = {
+            position: [],
+            gap: 150,
+            maxYPos: -200,
+            dx: 2,
+            
+            draw: function() {
+                for (let i = 0; i < this.position.length; i++) {
+                    let p = this.position[i];
+                    
+                    // Boru gölgeleri
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                    ctx.fillRect(p.x + 3, p.y + 3, p.width, p.height);
+                    
+                    let bottomPipeY = p.y + p.height + this.gap;
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                    ctx.fillRect(p.x + 3, bottomPipeY + 3, p.width, canvas.height - bottomPipeY);
+                    
+                    // Boru texture'ı oluştur
+                    let pipeTexture = ctx.createLinearGradient(p.x, p.y, p.x + p.width, p.y);
+                    pipeTexture.addColorStop(0, '#2E7D32');
+                    pipeTexture.addColorStop(0.2, '#388E3C');
+                    pipeTexture.addColorStop(0.5, '#4CAF50');
+                    pipeTexture.addColorStop(0.8, '#388E3C');
+                    pipeTexture.addColorStop(1, '#2E7D32');
+                    
+                    // Üst boru
+                    ctx.fillStyle = pipeTexture;
+                    ctx.fillRect(p.x, p.y, p.width, p.height);
+                    
+                    // Üst boru detay çizgileri
+                    ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+                    ctx.lineWidth = 1;
+                    for (let j = p.y + 10; j < p.y + p.height; j += 15) {
+                        ctx.beginPath();
+                        ctx.moveTo(p.x, j);
+                        ctx.lineTo(p.x + p.width, j);
+                        ctx.stroke();
+                    }
+                    
+                    // Üst boru başlığı
+                    let capGradient = ctx.createLinearGradient(p.x, p.y + p.height - 25, p.x, p.y + p.height);
+                    capGradient.addColorStop(0, '#1B5E20');
+                    capGradient.addColorStop(1, '#2E7D32');
+                    ctx.fillStyle = capGradient;
+                    ctx.fillRect(p.x - 5, p.y + p.height - 25, p.width + 10, 25);
+                    
+                    // Üst boru başlığı gölgesi
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                    ctx.fillRect(p.x - 3, p.y + p.height - 25, p.width + 6, 5);
+                    
+                    // Alt boru
+                    ctx.fillStyle = pipeTexture;
+                    ctx.fillRect(p.x, bottomPipeY, p.width, canvas.height - bottomPipeY);
+                    
+                    // Alt boru detay çizgileri
+                    ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+                    for (let j = bottomPipeY + 10; j < canvas.height; j += 15) {
+                        ctx.beginPath();
+                        ctx.moveTo(p.x, j);
+                        ctx.lineTo(p.x + p.width, j);
+                        ctx.stroke();
+                    }
+                    
+                    // Alt boru başlığı
+                    ctx.fillStyle = capGradient;
+                    ctx.fillRect(p.x - 5, bottomPipeY, p.width + 10, 25);
+                    
+                    // Alt boru başlığı gölgesi
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                    ctx.fillRect(p.x - 3, bottomPipeY, p.width + 6, 5);
+                }
+            },
+            
+            update: function() {
+                if (gameStarted && !gameOver && firstTap) {
+                    if (frames % 120 === 0) {
+                        this.position.push({
+                            x: canvas.width,
+                            y: this.maxYPos * (Math.random() + 0.5),
+                            width: 60,
+                            height: 350
+                        });
+                    }
+                    
+                    for (let i = 0; i < this.position.length; i++) {
+                        let p = this.position[i];
+                        p.x -= this.dx;
+                        
+                        // Skor artırma
+                        if (p.x + p.width < bird.x && !p.passed) {
+                            score++;
+                            document.getElementById('score').textContent = score;
+                            document.getElementById('score').style.animation = 'scorePop 0.3s';
+                            setTimeout(() => {
+                                document.getElementById('score').style.animation = '';
+                            }, 300);
+                            
+                            // Skor partikülleri
+         
